@@ -1,0 +1,52 @@
+// Install required libraries
+// npm install axios cheerio
+
+const axios = require('axios');
+const cheerio = require('cheerio');
+
+// Test HTML code
+const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<title>Page Title</title>
+</head>
+<body>
+<h3><b id='boldest'>Lebron James</b></h3>
+<p> Salary: $ 92,000,000 </p>
+<h3> Stephen Curry</h3>
+<p> Salary: $85,000, 000 </p>
+<h3> Kevin Durant </h3>
+<p> Salary: $73,200, 000</p>
+</body>
+</html>
+`;
+
+// Parse the HTML document
+const $ = cheerio.load(html);
+
+// Display HTML in nested structure
+console.log($.html());
+
+// Display Tag title
+const tagObject = $('title');
+console.log("tag object:", tagObject.text());
+
+console.log("tag object type:", typeof tagObject);
+
+// This tag example would give us the most paid player in the NBA
+const mostPaidPlayer = $('h3').first().text();
+console.log("Most paid player:", mostPaidPlayer);
+
+// Downloading and scraping the contents of a web page
+const url = "http://www.ibm.com";
+
+// Download the contents of the webpage in text format and store in variable called data
+axios.get(url)
+  .then(response => {
+    const data = response.data;
+    console.log(data);
+  })
+  .catch(error => {
+    console.error("Error fetching the URL:", error);
+  });
