@@ -1,0 +1,66 @@
+import ai.djl.Application;
+import ai.djl.Model;
+import ai.djl.ModelException;
+import ai.djl.inference.Predictor;
+import ai.djl.modality.nlp.DefaultVocabulary;
+import ai.djl.modality.nlp.Vocabulary;
+import ai.djl.modality.nlp.bert.BertFullTokenizer;
+import ai.djl.modality.nlp.bert.BertTokenizer;
+import ai.djl.modality.nlp.bert.BertWordpieceTokenizer;
+import ai.djl.modality.nlp.bert.BertWordpieceTokenizerFactory;
+import ai.djl.translate.TranslateException;
+import ai.djl.translate.Translator;
+import ai.djl.translate.TranslatorContext;
+import ai.djl.translate.TranslatorFactory;
+import ai.djl.translate.TranslatorOptions;
+import ai.djl.util.Utils;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+
+public class TextGenerator {
+
+    public static void main(String[] args) throws IOException, ModelException, TranslateException {
+        // Load the model
+        String modelPath = "./models/gpt2";
+        Model model = Model.newInstance(modelPath);
+
+        // Load the tokenizer
+        Vocabulary vocabulary = DefaultVocabulary.builder()
+                .optMinFrequency(1)
+                .addFromTextFile(Paths.get(modelPath, "vocab.txt"))
+                .build();
+        BertTokenizer tokenizer = new BertWordpieceTokenizer(vocabulary, true);
+
+        // Text generation - tokenizing the input prompt
+        String prompt = "The quick brown fox jumped over the";
+        List<String> tokens = tokenizer.tokenize(prompt);
+        System.out.println("Tokens: " + tokens);
+
+        // Convert tokens to input IDs
+        long[] inputIds = tokens.stream().mapToLong(vocabulary::getIndex).toArray();
+
+        // Create a predictor
+        Translator<long[], String> translator = new Translator<long[], String>() {
+            @Override
+            public String processOutput(TranslatorContext ctx, ai.djl.ndarray.NDList list) {
+                return list.singletonOrThrow().toString();
+            }
+
+            @Override
+            public ai.djl.ndarray.NDList processInput(TranslatorContext ctx, long[] input) {
+                return new ai.djl.ndarray.NDList(ctx.getNDManager().create(input));
+            }
+
+            @Override
+            public Batchifier getBatchifier() {
+                return null;
+            }
+        };
+
+        Predictor<long[], String> predictor = model.newPredictor(translator);
+        String result = predictor.predict(inputIds);
+        System.out.println("Generated Text: " + result);
+    }
+}
